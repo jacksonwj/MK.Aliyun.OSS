@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Aliyun.OSS</RootNamespace>
+    <Authors>WJ</Authors>
+    <Company>重庆麦康科技有限公司</Company>
+    <Description>基于阿里云 OSS .NET SDK 2.8.0</Description>
   </PropertyGroup>
 
   <ItemGroup>
