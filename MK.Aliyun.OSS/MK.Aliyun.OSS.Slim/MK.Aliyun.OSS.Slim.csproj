@@ -6,7 +6,7 @@
     <Version>1.0.0</Version>
     <Authors>WJ</Authors>
     <Company>重庆麦康科技有限公司</Company>
-    <Description>基于阿里云 OSS .NET(C#) SDK 2.8.0</Description>
+    <Description>阿里云 OSS .NET Standard 2.0 SDK</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
