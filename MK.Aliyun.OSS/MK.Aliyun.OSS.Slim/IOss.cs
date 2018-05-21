@@ -18,6 +18,37 @@ namespace Aliyun.OSS
     /// </remarks>
     public interface IOss
     {
+        #region Bucket Operations
+        /// <summary>
+        /// Sets <see cref="Bucket" /> lifecycle rule
+        /// </summary>
+        /// <param name="setBucketLifecycleRequest">the <see cref="SetBucketLifecycleRequest" /> instance</param>
+        void SetBucketLifecycle(SetBucketLifecycleRequest setBucketLifecycleRequest);
+        #endregion
+
+        #region Object Operations
+        /// <summary>
+        /// copy an object to another one in OSS.
+        /// </summary>
+        /// <param name="copyObjectRequst">The request parameter</param>
+        /// <returns>copy object result</returns>
+        CopyObjectResult CopyObject(CopyObjectRequest copyObjectRequst);
+
+        /// <summary>
+        /// Deletes <see cref="OssObject" />。
+        /// </summary>
+        /// <param name="bucketName"><see cref="Bucket" /> name</param>
+        /// <param name="key"><see cref="OssObject.Key" /></param>
+        void DeleteObject(string bucketName, string key);
+
+        /// <summary>
+        /// Deletes multiple objects
+        /// </summary>
+        /// <param name="deleteObjectsRequest">the request parameter</param>
+        /// <returns>delete object result</returns>
+        DeleteObjectsResult DeleteObjects(DeleteObjectsRequest deleteObjectsRequest);
+        #endregion
+
         #region Generate Post Policy
         /// <summary>
         /// Generates the post policy

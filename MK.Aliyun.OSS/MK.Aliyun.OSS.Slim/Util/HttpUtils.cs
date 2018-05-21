@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -11,8 +10,10 @@ namespace Aliyun.OSS.Util
     {
         public const string Utf8Charset = "utf-8";
         public const string Iso88591Charset = "iso-8859-1";
+        public const string UrlEncodingType = "url";
         public const string HttpProto = "http://";
         public const string HttpsProto = "https://";
+        public const string DefaultContentType = "application/octet-stream";
 
         private const string UrlAllowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~";
         private static IDictionary<string, string> _mimeDict = new Dictionary<string, string>();
@@ -155,6 +156,17 @@ namespace Aliyun.OSS.Util
 
             var bytes = Encoding.GetEncoding(fromCharset).GetBytes(data);
             return Encoding.GetEncoding(toCharset).GetString(bytes);
+        }
+
+        public static string DecodeUri(string uriToDecode)
+        {
+            if (!string.IsNullOrEmpty(uriToDecode))
+            {
+                uriToDecode = uriToDecode.Replace("+", " ");
+                return Uri.UnescapeDataString(uriToDecode);
+            }
+
+            return string.Empty;
         }
     }
 }

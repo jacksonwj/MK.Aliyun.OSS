@@ -1,6 +1,8 @@
-﻿using Aliyun.OSS.Common;
+﻿using Aliyun.OSS.Commands;
+using Aliyun.OSS.Common;
 using Aliyun.OSS.Common.Authentication;
 using Aliyun.OSS.Common.Communication;
+using Aliyun.OSS.Common.Handlers;
 using Aliyun.OSS.Util;
 
 using System;
@@ -73,6 +75,59 @@ namespace Aliyun.OSS
         }
         #endregion
 
+        #region Bucket Operations
+        /// <inheritdoc/>
+        public void SetBucketLifecycle(SetBucketLifecycleRequest setBucketLifecycleRequest)
+        {
+            ThrowIfNullRequest(setBucketLifecycleRequest);
+
+            if (setBucketLifecycleRequest.LifecycleRules.Count == 0)
+            {
+                throw new ArgumentException("SetBucketLifecycleRequest must have at least one LifecycleRule.");
+            }
+
+            var cmd = SetBucketLifecycleCommand.Create(_serviceClient, _endpoint,
+                                                       CreateContext(HttpMethod.Put, setBucketLifecycleRequest.BucketName, null),
+                                                       setBucketLifecycleRequest.BucketName,
+                                                       setBucketLifecycleRequest);
+            using (cmd.Execute())
+            {
+                // Do nothing
+            }
+        }
+        #endregion
+
+        #region Object Operations
+        /// <inheritdoc/>
+        public CopyObjectResult CopyObject(CopyObjectRequest copyObjectRequst)
+        {
+            ThrowIfNullRequest(copyObjectRequst);
+            var cmd = CopyObjectCommand.Create(_serviceClient, _endpoint,
+                                               CreateContext(HttpMethod.Put, copyObjectRequst.DestinationBucketName, copyObjectRequst.DestinationKey),
+                                               copyObjectRequst);
+            return cmd.Execute();
+        }
+
+        /// <inheritdoc/>
+        public void DeleteObject(string bucketName, string key)
+        {
+            var cmd = DeleteObjectCommand.Create(_serviceClient, _endpoint,
+                                                 CreateContext(HttpMethod.Delete, bucketName, key),
+                                                 bucketName, key);
+            cmd.Execute();
+        }
+
+        /// <inheritdoc/>
+        public DeleteObjectsResult DeleteObjects(DeleteObjectsRequest deleteObjectsRequest)
+        {
+            ThrowIfNullRequest(deleteObjectsRequest);
+            var cmd = DeleteObjectsCommand.Create(_serviceClient, _endpoint,
+                                                  CreateContext(HttpMethod.Post, deleteObjectsRequest.BucketName, null),
+                                                  deleteObjectsRequest);
+            return cmd.Execute();
+        }
+        #endregion
+
         #region Generate Post Policy
         /// <inheritdoc/>
         public string GeneratePostPolicy(DateTime expiration, PolicyConditions conds)
@@ -92,6 +147,28 @@ namespace Aliyun.OSS
         #endregion
 
         #region Private Methods
+        private ExecutionContext CreateContext(HttpMethod method, string bucket, string key)
+        {
+            var builder = new ExecutionContextBuilder
+            {
+                Bucket = bucket,
+                Key = key,
+                Method = method,
+                Credentials = _credsProvider.GetCredentials()
+            };
+
+            builder.ResponseHandlers.Add(new ErrorResponseHandler());
+            return builder.Build();
+        }
+
+        virtual protected void ThrowIfNullRequest<TRequestType>(TRequestType request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException("request");
+            }
+        }
+
         private static Uri FormatEndpoint(string endpoint)
         {
             string canonicalizedEndpoint = endpoint.Trim().ToLower();

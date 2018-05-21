@@ -1,8 +1,12 @@
 ﻿using Aliyun.OSS.Common;
 using Aliyun.OSS.Common.Communication;
+using Aliyun.OSS.Common.Internal;
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -25,6 +29,23 @@ namespace Aliyun.OSS.Util
     /// </summary>
     public static class OssUtils
     {
+        private const string CharsetName = "utf-8";
+
+        /// <summary>
+        /// Max lifecycle rule count per bucket.
+        /// </summary>
+        public const int LifecycleRuleLimit = 1000;
+
+        /// <summary>
+        /// Max object key's length.
+        /// </summary>
+        public const int ObjectNameLengthLimit = 1023;
+
+        /// <summary>
+        /// Max objects to delete in multiple object deletion call.
+        /// </summary>
+        public const int DeleteObjectsUpperLimit = 1000;
+
         //internal static string DetermineOsVersion()
         //{
         //    try
@@ -95,6 +116,86 @@ namespace Aliyun.OSS.Util
         }
 
         /// <summary>
+        /// Check if the bucket name is valid,.
+        /// </summary>
+        /// <param name="bucketName">bucket name</param>
+        /// <returns>true:valid bucket name</returns>
+        public static bool IsBucketNameValid(string bucketName)
+        {
+            if (string.IsNullOrWhiteSpace(bucketName))
+            {
+                return false;
+            }
+
+            const string pattern = "^[a-z0-9][a-z0-9\\-]{1,61}[a-z0-9]$";
+            var regex = new Regex(pattern);
+            return regex.Match(bucketName).Success;
+        }
+
+        /// <summary>
+        /// validates the object key
+        /// </summary>
+        /// <param name="key">object key</param>
+        /// <returns>true:valid object key</returns>
+        public static bool IsObjectKeyValid(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key) || key.StartsWith("/") || key.StartsWith("\\"))
+            {
+                return false;
+            }
+
+            var byteCount = Encoding.GetEncoding(CharsetName).GetByteCount(key);
+            return byteCount <= ObjectNameLengthLimit;
+        }
+
+        internal static void CheckBucketName(string bucketName)
+        {
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                throw new ArgumentException(Resources.ExceptionIfArgumentStringIsNullOrEmpty, "bucketName");
+            }
+
+            if (!IsBucketNameValid(bucketName))
+            {
+                throw new ArgumentException(OssResources.BucketNameInvalid, "bucketName");
+            }
+        }
+
+        internal static void CheckObjectKey(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException(Resources.ExceptionIfArgumentStringIsNullOrEmpty, "key");
+            }
+
+            if (!IsObjectKeyValid(key))
+            {
+                throw new ArgumentException(OssResources.ObjectKeyInvalid, "key");
+            }
+        }
+
+        internal static string BuildCopyObjectSource(string bucketName, string objectKey)
+        {
+            return "/" + bucketName + "/" + UrlEncodeKey(objectKey);
+        }
+
+        //internal static string JoinETag(IEnumerable<string> etags)
+        //{
+        //    StringBuilder result = new StringBuilder();
+
+        //    var first = true;
+        //    foreach (var etag in etags)
+        //    {
+        //        if (!first)
+        //            result.Append(", ");
+        //        result.Append(etag);
+        //        first = false;
+        //    }
+
+        //    return result.ToString();
+        //}
+
+        /// <summary>
         /// Applies the Url encoding on the key
         /// </summary>
         /// <param name="key">the object key to encode</param>
@@ -131,6 +232,34 @@ namespace Aliyun.OSS.Util
             }
 
             return encodedKey.ToString();
+        }
+
+        /// <summary>
+        /// Compute the MD5 on the input stream with the given size.
+        /// </summary>
+        /// <param name="input">The input stream</param>
+        /// <param name="partSize">the part size---it could be less than the stream size</param>
+        /// <returns>MD5 digest value</returns>
+        public static string ComputeContentMd5(Stream input, long partSize)
+        {
+            using (var md5Calculator = MD5.Create())
+            {
+                long position = input.Position;
+                var partialStream = new PartialWrapperStream(input, partSize);
+                var md5Value = md5Calculator.ComputeHash(partialStream);
+                input.Seek(position, SeekOrigin.Begin);
+                return Convert.ToBase64String(md5Value);
+            }
+        }
+
+        /// <summary>
+        /// Trims quotes in the ETag
+        /// </summary>
+        /// <param name="eTag">The Etag to trim</param>
+        /// <returns>The Etag without the quotes</returns>
+        public static string TrimQuotes(string eTag)
+        {
+            return eTag != null ? eTag.Trim('\"') : null;
         }
     }
 }
